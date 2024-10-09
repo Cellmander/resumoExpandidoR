@@ -25,7 +25,7 @@ ggplot(tabela_top, aes(x = reorder(`Causa dos acidentes`, Frequencia), y = Frequ
   ggtitle(paste("Top", top_n, "Causas de Acidentes")) +
   theme_minimal()
 
-#qual dia da semana ocorre mais acidentes
+#Qual dia da semana ocorre mais acidentes
 diatabela = table(dados$dia_semana, useNA = "ifany")
 ptabela = round(prop.table(diatabela)*100,1)
 tabela2 <- data.frame(Dias_semana = names(diatabela), Frequencia = as.vector(diatabela), Porcentagem = as.vector(ptabela))
@@ -40,7 +40,7 @@ ggplot(tabela2, aes(x = reorder(Dias_semana, -Frequencia), y = Frequencia)) +
   theme_minimal()
 
 
-#condicao metereologica
+#Condição metereológica
 dtabela = table(dados$condicao_metereologica, useNA = "ifany")
 ptabela = round(prop.table(dtabela)*100,1)
 tabela3 <- data.frame(condicao_meteorologica = names(dtabela), Frequencia = as.vector(dtabela), Porcentagem = as.vector(ptabela))         ##BRUNO: cpa faz sentido colocar a fase do dia na msm tabela (n sei fazer isso)
@@ -125,7 +125,7 @@ acidentes_por_causa <- dados %>%
 #Gráfico taxa de mortalidade dos acidentes por causa do acidente
 library(ggplot2)
 
-# Criar um gráfico de barras para visualizar a taxa de mortalidade
+#Gráfico de barras para visualizar a taxa de mortalidade
 ggplot(acidentes_por_causa, aes(x = reorder(causa_acidente, -taxa_mortalidade), y = taxa_mortalidade)) +
   geom_bar(stat = "identity", fill = "steelblue") +
   coord_flip() +
