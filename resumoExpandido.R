@@ -106,13 +106,17 @@ ggplot(tabela_top, aes(x = reorder(Municipio, -`Frequencia Total`), y = `Frequen
 
 #Taxa de mortalidade dos acidentes por causa do acidente
 library(dplyr)
+library(ggplot2)
+
 acidentes_fatais <- dados %>% filter(mortos >= 1)
+
 causa_acidente_fatal <- acidentes_fatais %>%
   group_by(causa_acidente) %>%
   summarise(total_mortos = sum(mortos)) %>%
   arrange(desc(total_mortos))
 
 dados <- dados %>% mutate(acidente_fatal = ifelse(mortos > 0, 1, 0))
+
 acidentes_por_causa <- dados %>%
   group_by(causa_acidente) %>%
   summarise(
@@ -120,28 +124,24 @@ acidentes_por_causa <- dados %>%
     acidentes_fatais = sum(acidente_fatal)
   ) %>%
   mutate(taxa_mortalidade = acidentes_fatais / total_acidentes * 100) %>%
-  arrange(desc(taxa_mortalidade))
+  arrange(desc(taxa_mortalidade)) %>%
+  top_n(5, taxa_mortalidade)  # Selecionando as 5 principais causas
 
-#Gráfico taxa de mortalidade dos acidentes por causa do acidente
-library(ggplot2)
+# Organizando as causas no gráfico
+acidentes_barras <- acidentes_por_causa %>%
+  arrange(desc(taxa_mortalidade)) %>%
+  mutate(causa_acidente = factor(causa_acidente, levels = causa_acidente))
 
-#Gráfico de barras para visualizar a taxa de mortalidade
-ggplot(acidentes_por_causa, aes(x = reorder(causa_acidente, -taxa_mortalidade), y = taxa_mortalidade)) +
+# Criando o gráfico de barras
+ggplot(acidentes_barras, aes(x = reorder(causa_acidente, -taxa_mortalidade), y = taxa_mortalidade)) +
   geom_bar(stat = "identity", fill = "steelblue") +
-  coord_flip() +
-  labs(x = "Causa do Acidente", y = "Taxa de Mortalidade (%)", 
-       title = "Taxa de Mortalidade por Causa de Acidente") +
-  theme_minimal(base_size = 15) + 
-  theme(
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    axis.ticks = element_blank()
-  ) +
-  geom_text(aes(label = round(taxa_mortalidade, 1)), 
-            position = position_stack(vjust = 0.5), 
-            hjust = -0.2, 
-            color = "black")
-
+  geom_text(aes(label = paste0(round(taxa_mortalidade, 2), "%")), 
+            vjust = ifelse(acidentes_barras$taxa_mortalidade > 5, -0.3, 1.5), # Ajusta a posição dependendo do valor
+            size = 3.5, color = "black") +
+  labs(x = "Causa do Acidente", y = "Taxa de Mortalidade (%)", title = "Top 5 Causas de Mortalidade por Acidente") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylim(0, max(acidentes_barras$taxa_mortalidade) * 1.2)  # Aumenta o limite do eixo y para dar mais espaço
 
 
 #Quantidade de feridos por causa de acidente
@@ -150,6 +150,29 @@ causa_acidente_ferido <- acidentes_feridos %>%
   group_by(causa_acidente) %>%
   summarise(total_feridos = sum(feridos)) %>%
   arrange(desc(total_feridos))
+
+library(dplyr)
+library(ggplot2)
+
+
+# Filtrando os 5 maiores valores de feridos
+causa_acidente_top5 <- acidentes_feridos %>%
+  group_by(causa_acidente) %>%
+  summarise(total_feridos = sum(feridos)) %>%
+  arrange(desc(total_feridos)) %>%
+  slice_max(order_by = total_feridos, n = 5) %>%  # Mantém apenas o Top 5
+  mutate(causa_acidente = factor(causa_acidente, levels = causa_acidente))
+
+# Criando o gráfico de barras para o Top 5 com tamanho da letra ajustado
+ggplot(causa_acidente_top5, aes(x = reorder(causa_acidente, -total_feridos), y = total_feridos)) +
+  geom_bar(stat = "identity", fill = "coral") +
+  geom_text(aes(label = total_feridos), vjust = -0.3, size = 3.5) +
+  labs(x = "Causa do Acidente", y = "Total de Feridos", title = "Top 5: Total de Feridos por Causa do Acidente") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 8)  # Reduz o tamanho da letra das causas para 8
+  ) +
+  ylim(0, max(causa_acidente_top5$total_feridos) * 1.1)  # Aumenta o limite do eixo y
 
 #Gravidade por tipo de acidente
 gravidade_por_tipo_acidente <- dados %>%
@@ -164,3 +187,16 @@ gravidade_por_tipo_acidente <- dados %>%
     media_feridos_por_acidente = total_feridos / total_acidentes
   ) %>%
   arrange(desc(total_mortes))
+
+# Gráfico de dispersão (média de mortes vs média de feridos)
+library(ggplot2)
+ggplot(gravidade_por_tipo_acidente, aes(x = media_feridos_por_acidente, y = media_mortes_por_acidente)) +
+  geom_point(aes(size = total_acidentes, color = tipo_acidente), alpha = 0.7) +  # Pontos proporcionais ao total de acidentes
+  labs(
+    x = "Média de Feridos por Acidente",
+    y = "Média de Mortes por Acidente",
+    title = "Gravidade dos Acidentes por Tipo de Acidente",
+    size = "Total de Acidentes"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
